@@ -10,70 +10,66 @@ $app = new \Slim\App;
 
 $key = 'server_hack';
 
-//token rotation for every endpoint
+
 function generateToken($userid) {
     global $key;
 
-    // Token generation
-    $iat = time(); // Issued at time
-    $exp = $iat + 7200; // Expiration time (2 hours)
     
-    // Payload data for JWT
+    $iat = time(); 
+    $exp = $iat + 7200; 
+    
+    
     $payload = [
-        'iss' => 'http://library.org', // Issuer
-        'aud' => 'http://library.com', // Audience
-        'iat' => $iat,                 // Issued at time
-        'exp' => $exp,                 // Expiration time
+        'iss' => 'http://library.org', 
+        'aud' => 'http://library.com', 
+        'iat' => $iat,                 
+        'exp' => $exp,                 
         "data" => [
-            "userid" => $userid        // User ID data
+            "userid" => $userid        
         ]
     ];
 
-    // Encode the token
+    
     $token = JWT::encode($payload, $key, 'HS256');
 
-    // Database connection credentials
+    
     $servername = "localhost";
     $username = "root";
     $password = "";
     $dbname = "library";
 
     try {
-        // Create a new PDO connection to the MySQL database
         $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        // Prepare the SQL query to insert token information into the database
         $sql = "INSERT INTO tokens (token, userid, status) VALUES (:token, :userid, 'active')";
         $stmt = $conn->prepare($sql);
 
-        // Bind parameters
         $stmt->bindParam(':token', $token);
         $stmt->bindParam(':userid', $userid);
 
-        // Execute the query
         $stmt->execute();
     } catch (PDOException $e) {
-        // Handle exceptions (logging can be implemented here)
+
     }
 
-    // Return the generated token
+    
     return $token;
 }
 
 function validateToken($token) {
-    global $key; // Use the global variable $key for JWT decoding
+    global $key; 
     $servername = "localhost";
     $username = "root";
     $password = "";
     $dbname = "library";
 
     try {
-        // Create a new PDO connection to the database
+      
         $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Set error mode to exception
 
-        // Prepare a SQL statement to check if the token exists and is active
+       
         $sql = "SELECT * FROM tokens WHERE token = :token AND status = 'active'";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':token', $token); // Bind the token parameter
@@ -229,8 +225,8 @@ $app->get('/user/display', function (Request $request, Response $response) {
     $userid = validateToken($token);
 
     if (!$userid) {
-        error_log("Invalid or expired token");
-        return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Invalid or expired token"))));
+        error_log("Token is invalid or has expired.");
+        return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Token is invalid or has expired."))));
     }
 
     $servername = "localhost";
@@ -278,7 +274,7 @@ $app->put('/user/update', function (Request $request, Response $response) {
     $useridFromToken = validateToken($token);
 
     if (!$useridFromToken) {
-        return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Invalid or expired token"))));
+        return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Token is invalid or has expired."))));
     }
 
     $useridToUpdate = $data->userid;
@@ -339,7 +335,7 @@ $app->delete('/user/delete', function (Request $request, Response $response) {
     $useridFromToken = validateToken($token);
 
     if (!$useridFromToken) {
-        return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Invalid or expired token"))));
+        return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Token is invalid or has expired."))));
     }
 
     $useridToDelete = $data->userid;
@@ -453,7 +449,7 @@ $app->get('/author/display', function (Request $request, Response $response) {
 
     // If token is invalid or expired, return a 401 error
     if (!$userid) {
-        error_log("Invalid or expired token");
+        error_log("Token is invalid or has expired.");
         return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Your token is expired, Generate another transaction"))));
     }
 
@@ -713,7 +709,7 @@ $app->get('/book/display', function (Request $request, Response $response) {
     // Validate the token
     $userid = validateToken($token);
     if (!$userid) {
-        error_log("Invalid or expired token");
+        error_log("Token is invalid or has expired.");
         return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Your token is expired, Generate another transaction"))));
     }
 
@@ -966,7 +962,7 @@ $app->get('/book_author/display', function (Request $request, Response $response
     // Validate the token
     $userid = validateToken($token);
     if (!$userid) {
-        error_log("Invalid or expired token");
+        error_log("Token is invalid or has expired.");
         return $response->withStatus(401)->write(json_encode(array("status" => "fail", "data" => array("title" => "Your token is expired, Generate another transaction"))));
     }
 
